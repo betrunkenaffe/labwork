@@ -1,0 +1,16 @@
+# Basic connectivity test and data gathering
+- name: All Devices
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_static_routes:
+        state: gathered
+      register: basic_facts
+
+    - name: Print Basic Facts
+      debug:
+        var: basic_facts

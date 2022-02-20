@@ -1,0 +1,26 @@
+# Used to clean up static routes used for initial configuration to allow ansible to access
+- name: All Network devices
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_static_routes:
+        state: gathered
+      register: basic_facts
+
+    - name: Remove default routes
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 0.0.0.0/0
+        state: deleted
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+

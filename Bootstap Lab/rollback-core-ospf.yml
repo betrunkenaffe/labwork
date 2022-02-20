@@ -1,0 +1,146 @@
+# Forcibly rolls back all steps from implement-core-ospf playbook
+- name: Core Switches
+  hosts: core
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Rollback CoreSW Changes
+      cisco.ios.ios_config:
+        lines:
+          - no router ospf 1
+          - no router ospf 2
+          - no route-map distribute_out
+          - no route-map automation_out
+          - no ip prefix-list automation_subnet
+          - no ip prefix-list core_networks
+          - no int loopback0
+          - no int loopback1
+      ignore_errors: yes
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Reboot Core Switches
+      cli_command:
+        command: reload
+        prompt:
+         - confirm
+        answer: "y"
+      register: output
+
+    - debug: msg="{{ output.stdout }}"
+
+- name: Ansible Gateway
+  hosts: ansible
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Rollback AnsibleGW Changes
+      cisco.ios.ios_config:
+        lines:
+          - no router ospf 2
+          - no int loopback0
+      ignore_errors: yes
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Reboot Ansible Gateway
+      cli_command:
+        command: reload
+        prompt:
+         - confirm
+        answer: "y"
+      register: output
+
+    - debug: msg="{{ output.stdout }}"
+
+- name: Server Router
+  hosts: server
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Rollback Server Router Changes
+      cisco.ios.ios_config:
+        lines:
+          - no router ospf 1
+          - no int loopback0
+      ignore_errors: yes
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Reboot Server Router
+      cli_command:
+        command: reload
+        prompt:
+         - confirm
+        answer: "y"
+      register: output
+
+    - debug: msg="{{ output.stdout }}"
+
+- name: User Router
+  hosts: user
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Rollback User Router Changes
+      cisco.ios.ios_config:
+        lines:
+          - no router ospf 1
+          - no int loopback0
+      ignore_errors: yes
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Reboot User Router
+      cli_command:
+        command: reload
+        prompt:
+         - confirm
+        answer: "y"
+      register: output
+
+    - debug: msg="{{ output.stdout }}"
+
+- name: WAN Router
+  hosts: wan
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Rollback WAN Router Changes
+      cisco.ios.ios_config:
+        lines:
+          - no router ospf 1
+          - no int loopback0
+      ignore_errors: yes
+
+    - name: Save Config
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Reboot WAN Router
+      cli_command:
+        command: reload
+        prompt:
+         - confirm
+        answer: "y"
+      register: output
+
+    - debug: msg="{{ output.stdout }}"

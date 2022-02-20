@@ -1,0 +1,375 @@
+# Implements ospf on all the basic network devices allowing interconnectivity
+# Does not advertise userspace, is just used to get all devices passing basic routing through OSPF
+# Advertises the 10.0.x.x management space back to ansible gateway
+- name: Core Switch 1
+  hosts: coresw1
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback Addresses
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Core OSPF address
+            - ip add 10.0.0.1 255.255.255.255
+            - int loopback1
+            - description Automation OSPF address
+            - ip add 10.0.255.1 255.255.255.255
+
+      - name: Create Route Maps for Redistribution
+        cisco.ios.ios_config:
+          lines:
+            - ip prefix-list automation_subnet seq 20 permit 192.168.6.0/25 ge 26
+            - route-map distribute_out permit 0
+            - match ip add prefix-list automation_subnet
+            - ip prefix-list core_networks seq 20 permit 10.0.0.0/16 ge 17
+            - route-map automation_out permit 0
+            - match ip add prefix-list core_networks
+        notify: save_config
+
+      - name: Configure OSPF 1
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 1
+            - router-id 10.0.0.1
+            - neighbor 10.3.0.14
+            - neighbor 10.3.0.18
+            - neighbor 10.3.0.26
+            - network 10.3.0.12 0.0.0.3 area 0
+            - network 10.3.0.16 0.0.0.3 area 0
+            - network 10.3.0.24 0.0.0.3 area 0
+            - network 10.0.0.1 0.0.0.0 area 0
+            - redistribute ospf 2 subnet route-map distribute_out
+        notify: save_config
+
+      - name: Configure OSPF 2
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 2
+            - router-id 10.0.255.1
+            - neighbor 10.3.0.1
+            - network 10.3.0.0 0.0.0.3 area 0
+            - redistribute ospf 1 subnet route-map automation_out
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 1
+            - no router ospf 2
+            - no int loopback0
+            - no int loopback1
+            - no route-map distribute_out
+            - no route-map automation_out
+            - no ip prefix-list automation_subnet
+            - no ip prefix-list core_networks
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+- name: Core Switch 2
+  hosts: coresw2
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback Addresses
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Core OSPF address
+            - ip add 10.0.0.2 255.255.255.255
+            - int loopback1
+            - description Automation OSPF address
+            - ip add 10.0.255.2 255.255.255.255
+
+      - name: Create Route Maps for Redistribution
+        cisco.ios.ios_config:
+          lines:
+            - ip prefix-list automation_subnet seq 20 permit 192.168.6.0/25 ge 26
+            - route-map distribute_out permit 0
+            - match ip add prefix-list automation_subnet
+            - ip prefix-list core_networks seq 20 permit 10.0.0.0/16 ge 17
+            - route-map automation_out permit 0
+            - match ip add prefix-list core_networks
+        notify: save_config
+
+      - name: Configure OSPF 1
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 1
+            - router-id 10.0.0.2
+            - neighbor 10.3.0.10
+            - neighbor 10.3.0.22
+            - neighbor 10.3.0.30
+            - network 10.3.0.8 0.0.0.3 area 0
+            - network 10.3.0.20 0.0.0.3 area 0
+            - network 10.3.0.28 0.0.0.3 area 0
+            - network 10.0.0.2 0.0.0.0 area 0
+            - redistribute ospf 2 subnet route-map distribute_out
+        notify: save_config
+
+
+      - name: Configure OSPF 2
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 2
+            - router-id 10.0.255.2
+            - neighbor 10.3.0.5
+            - network 10.3.0.4 0.0.0.3 area 0
+            - redistribute ospf 1 subnet route-map automation_out
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 1
+            - no router ospf 2
+            - no int loopback0
+            - no int loopback1
+            - no route-map distribute_out
+            - no route-map automation_out
+            - no ip prefix-list automation_subnet
+            - no ip prefix-list core_networks
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+- name: Ansible Gateway
+  hosts: ansible
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Automation OSPF address
+            - ip add 10.0.255.3 255.255.255.255
+
+      - name: Configure OSPF 2
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 2
+            - router-id 10.0.255.3
+            - neighbor 10.3.0.2
+            - neighbor 10.3.0.6
+            - network 10.3.0.0 0.0.0.3 area 0
+            - network 10.3.0.4 0.0.0.3 area 0
+            - redistribute static
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 2
+            - no int loopback0
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+- name: Server Router
+  hosts: server
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback Address
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Core OSPF address
+            - ip add 10.0.0.3 255.255.255.255
+
+      - name: Configure OSPF 1
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 1
+            - router-id 10.0.0.3
+            - neighbor 10.3.0.17
+            - neighbor 10.3.0.21
+            - network 10.3.0.16 0.0.0.3 area 0
+            - network 10.3.0.20 0.0.0.3 area 0
+            - network 10.0.0.3 0.0.0.0 area 0
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 1
+            - no int loopback0
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+- name: Users Router
+  hosts: user
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback Address
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Core OSPF address
+            - ip add 10.0.0.4 255.255.255.255
+
+      - name: Configure OSPF 1
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 1
+            - router-id 10.0.0.4
+            - neighbor 10.3.0.25
+            - neighbor 10.3.0.29
+            - network 10.3.0.24 0.0.0.3 area 0
+            - network 10.3.0.28 0.0.0.3 area 0
+            - network 10.0.0.4 0.0.0.0 area 0
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 1
+            - no int loopback0
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+- name: WAN Router
+  hosts: wan
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Gather Facts
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: facts
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Backup Config before starting change
+      cisco.ios.ios_config:
+        save_when: always
+
+    - block:
+      - name: Configure Loopback Address
+        cisco.ios.ios_config:
+          lines:
+            - int loopback0
+            - description Core OSPF address
+            - ip add 10.0.0.5 255.255.255.255
+
+      - name: Configure OSPF 1
+        cisco.ios.ios_config:
+          lines:
+            - router ospf 1
+            - router-id 10.0.0.5
+            - neighbor 10.3.0.9
+            - neighbor 10.3.0.13
+            - network 10.3.0.8 0.0.0.3 area 0
+            - network 10.3.0.12 0.0.0.3 area 0
+            - network 10.0.0.5 0.0.0.3 area 0
+        notify: save_config
+
+      rescue:
+      - name: Undo All Changes
+        cisco.ios.ios_config:
+          lines:
+            - no router ospf 1
+            - no int loopback0
+        ignore_errors: yes
+        notify: save_config
+
+  handlers:
+    - name: save_config
+      cisco.ios.ios_config:
+        save_when: modified
