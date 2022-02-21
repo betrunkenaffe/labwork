@@ -1,0 +1,49 @@
+# Basic connectivity test and data gathering
+- name: All Core Network Devices
+  hosts: corenetwork
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Backup configuration
+      cisco.ios.ios_config:
+        save_when: always
+
+    - name: Configure Login Banner
+      cisco.ios.ios_banner:
+        banner: login
+        text: "Welcome to the lab, enjoy your stay"
+        state: present
+
+    - name : Configure MOTD Banner
+      cisco.ios.ios_banner:
+        banner: motd
+        text: "This is a secure lab"
+
+    - name: Reconfigure Logging
+      cisco.ios.ios_logging_global:
+        config:
+          hosts:
+            - hostname: 1.1.1.1
+        state: overridden
+
+    - name: Configure NTP
+      cisco.ios.ios_ntp_global:
+        config:
+          servers:
+          - server: 10.1.10.1
+            version: 2
+        state: overridden
+
+    - name: Configure Domain Name
+      cisco.ios.ios_system:
+        hostname: "{{ inventory_hostname }}"
+        domain_name: "{{ hostvars[inventory_hostname].domain }}"
+        state: present
+
+    - name: Regenerate Crypto Key
+      cisco.ios.ios_config:
+        lines:
+          - crypto key generate rsa mod 2048
+        save_when: modified
