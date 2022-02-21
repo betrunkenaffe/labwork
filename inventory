@@ -5,6 +5,7 @@ all:
     ansible_password: 123456
     ansible_become: yes
     ansible_become_method: enable
+    domain: lab.localdomain
   children:
     ios:
       vars:
