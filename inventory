@@ -1,14 +1,14 @@
 all:
   vars:
     ansible_connection: ansible.netcommon.network_cli
-    ansible_user: john
-    ansible_password: 123456
-    ansible_become: yes
-    ansible_become_method: enable
+    ansible_user: automation
+    ansible_password: abc123XYZ
     domain: lab.localdomain
   children:
     ios:
       vars:
+        ansible_become: yes
+        ansible_become_method: enable
         ansible_network_os: cisco.ios.ios
       children:
         ansible:
@@ -38,3 +38,8 @@ all:
     nxos:
       vars:
         ansible_network_os: cisco.nxos.nxos
+      children:
+        nexus_hosts:
+          hosts:
+            nexus:
+             ansible_host: 10.2.0.2

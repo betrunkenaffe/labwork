@@ -1,0 +1,58 @@
+# Manages the SNMP information for the device
+- name: All Network Devices
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Set Facts
+      set_fact:
+        snmp_group: SNMP_GROUP
+        snmp_group_auth: priv
+        snmp_version: v3
+        snmp_user: SNMP_USER
+        snmp_pass: Passw0rd
+        snmp_user_auth: auth
+        snmp_algorithm: sha
+
+    - name: Manage SNMP information on IOS
+      cisco.ios.ios_snmp_server:
+        config:
+          groups:
+            - group: "{{ snmp_group }}"
+              version: "{{ snmp_version }}"
+              version_option: "{{ snmp_group_auth }}"
+          users:
+            - username: "{{ snmp_user }}"
+              version: "{{ snmp_version }}"
+              # Auth appears to not be fully implemented on ios
+              # version_option: "{{ snmp_user_auth }}"
+              # auth_password: "{{ snmp_pass }}"
+              group: "{{ snmp_group }}"
+        state: overridden
+      when: ansible_network_os == "cisco.ios.ios"
+      notify: save_ios_config
+
+    - name: Manage SNMP information on NXOS
+      cisco.nxos.nxos_snmp_server:
+        config:
+          users:
+            auth:
+              - authentication:
+                  algorithm: "{{ snmp_algorithm }}"
+                  password: "{{ snmp_pass }}"
+                user: "{{ snmp_user }}"
+                group: "{{ snmp_group }}"
+        state: overridden
+      when: ansible_network_os == "cisco.nxos.nxos"
+      notify: save_nxos_config
+
+  handlers:
+    - name: save_ios_config
+      cisco.ios.ios_config:
+        save_when: modified
+
+    - name: save_nxos_config
+      cisco.nxos.nxos_config:
+        save_when: modified

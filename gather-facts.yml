@@ -1,16 +1,23 @@
 # Basic connectivity test and data gathering
 - name: All Devices
-  hosts: all
+  hosts: coresw2
   gather_facts: no
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
 
   tasks:
-    - name: Gather Facts
-      cisco.ios.ios_static_routes:
-        state: gathered
-      register: basic_facts
+    - name: Gather Facts (IOS)
+      cisco.ios.ios_facts:
+        gather_subset: all
+      register: basic_ios_facts
+      when: ansible_network_os == "cisco.ios.ios"
 
-    - name: Print Basic Facts
-      debug:
-        var: basic_facts
+    - name: Gather Facts (NXOS)
+      cisco.nxos.nxos_facts:
+        gather_subset: all
+      register: basic_nxos_facts
+      when: ansible_network_os == "cisco.nxos.nxos"
+
+#    - name: Print Basic Facts
+#      debug:
+#        var: basic_facts
