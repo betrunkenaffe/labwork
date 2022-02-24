@@ -1,0 +1,41 @@
+# Manages a single user (creates/updates)
+- name: All Network Devices
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+  tasks:
+    - name: Setting facts
+      set_fact:
+        username: automation
+        password: abc123XYZ
+        privilege: 15
+        role: network-admin
+
+    - name: Create new user/Update Password
+      cisco.ios.ios_user:
+        name: "{{ username }}"
+        configured_password: "{{ password }}"
+        privilege: "{{ privilege }}"
+        state: present
+      when: ansible_network_os == "cisco.ios.ios"
+      notify: save_config_ios
+
+    - name: Create new user/Update Password
+      cisco.nxos.nxos_user:
+        name: "{{ username }}"
+        configured_password: "{{ password }}"
+        role: "{{ role }}"
+        state: present
+      when: ansible_network_os == "cisco.nxos.nxos"
+      notify: save_config_nxos
+
+  handlers:
+    - name: save_config_ios
+      cisco.ios.ios_config:
+        save_when: modified
+
+    - name: save_config_nxos
+      cisco.nxos.nxos_config:
+        save_when: modified
