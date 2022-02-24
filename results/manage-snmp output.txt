@@ -1,0 +1,43 @@
+jump@jump-Standard-PC-i440FX-PIIX-1996:~/PycharmProjects/labwork$ ansible-playbook manage-snmp.yml -i inventory
+
+PLAY [All Network Devices] ***************************************************************************************************
+
+TASK [Set Facts] *************************************************************************************************************
+ok: [ansiblegw]
+ok: [nexus]
+ok: [coresw2]
+ok: [serverrt1]
+ok: [coresw1]
+ok: [userrt1]
+ok: [wanrt1]
+
+TASK [Manage SNMP information on IOS] ****************************************************************************************
+changed: [ansiblegw]
+changed: [coresw1]
+changed: [coresw2]
+changed: [userrt1]
+changed: [serverrt1]
+changed: [wanrt1]
+
+TASK [Manage SNMP information on NXOS] ***************************************************************************************
+changed: [nexus]
+
+RUNNING HANDLER [save_ios_config] ********************************************************************************************
+changed: [coresw2]
+changed: [userrt1]
+changed: [serverrt1]
+changed: [ansiblegw]
+changed: [coresw1]
+changed: [wanrt1]
+
+RUNNING HANDLER [save_nxos_config] *******************************************************************************************
+changed: [nexus]
+
+PLAY RECAP *******************************************************************************************************************
+ansiblegw                  : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+coresw1                    : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+coresw2                    : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+nexus                      : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+serverrt1                  : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+userrt1                    : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+wanrt1                     : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
