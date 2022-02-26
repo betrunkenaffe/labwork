@@ -204,7 +204,7 @@
             - neighbor 10.3.0.6
             - network 10.3.0.0 0.0.0.3 area 0
             - network 10.3.0.4 0.0.0.3 area 0
-            - redistribute static
+            - redistribute static subnet
         notify: save_config
 
       rescue:
